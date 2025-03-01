@@ -1,18 +1,15 @@
 package March.Automative;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import javax.mail.*;
-import javax.mail.Session;
-import javax.mail.internet.*;
 import com.jcraft.jsch.*;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.Test;
 
 public class Machines_stored {
+
     private static final int PORT = 22;
     private static final String USER = "appUser";
     private static final String PASSWORD = "Brain@123";
@@ -40,7 +37,7 @@ public class Machines_stored {
 
         try {
             JSch jsch = new JSch();
-            com.jcraft.jsch.Session sshSession = jsch.getSession(USER, host, PORT);  // Fully qualified for SSH Session
+            com.jcraft.jsch.Session sshSession = jsch.getSession(USER, host, PORT);
             sshSession.setPassword(PASSWORD);
             sshSession.setConfig("StrictHostKeyChecking", "no");
             sshSession.connect();
@@ -56,7 +53,7 @@ public class Machines_stored {
             String currentDate = getCurrentDate();
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.matches(".*[0-9]{2}:[0-9]{2}.*")) { // Ensuring it matches timestamp format
+                if (line.matches(".*[0-9]{2}:[0-9]{2}.*")) {
                     if (line.contains(currentDate)) {
                         currentFiles.add(line);
                     } else {
@@ -78,9 +75,6 @@ public class Machines_stored {
 
     @Test
     public void testFiles() {
-        StringBuilder emailBody = new StringBuilder();
-        boolean hasPendingFiles = false;
-
         for (Map.Entry<String, String> entry : MACHINES.entrySet()) {
             String host = entry.getKey();
             String directory = entry.getValue();
@@ -106,18 +100,11 @@ public class Machines_stored {
             System.out.println();
 
             if (!pendingFiles.isEmpty()) {
-                hasPendingFiles = true;
-                emailBody.append("\n========== ").append(host).append(" ==========\n");
-                emailBody.append("Pending Files:\n");
-                emailBody.append("Permissions    Size     Date       Time              Filename\n");
-                emailBody.append("---------------------------------------------------------------------------------------");
-
                 System.out.println("Pending Files:");
                 System.out.println("Permissions    Size     Date       Time              Filename");
                 System.out.println("---------------------------------------------------------------------------------------");
                 for (String file : pendingFiles) {
                     printFormattedFile(file);
-                    emailBody.append(file).append("\n");
                 }
             } else {
                 System.out.println("No pending files remaining on " + host);
@@ -125,11 +112,6 @@ public class Machines_stored {
             }
 
             Assert.assertNotNull(files, "Failed to fetch files from " + host);
-        }
-
-        // Send email if pending files exist
-        if (hasPendingFiles) {
-            sendEmail("recipient@example.com", "Pending Files Notification", emailBody.toString());
         }
     }
 
@@ -143,42 +125,6 @@ public class Machines_stored {
             String filename = String.join(" ", Arrays.copyOfRange(parts, 8, parts.length));
 
             System.out.printf("%-14s %-8s %-10s %-6s %s%n", permissions, size, date, time, filename);
-        }
-    }
-
-    public static void sendEmail(String toEmail, String subject, String bodyContent) {
-        final String fromEmail = "softwaretestingteam9@gmail.com"; // Your Gmail address
-        final String appPassword = "0999"; // Your generated App Password
-
-        // SMTP server settings
-        String host = "smtp.gmail.com";
-        Properties properties = new Properties();
-        properties.put("mail.smtp.host", host);
-        properties.put("mail.smtp.port", "587");
-        properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.starttls.enable", "true"); // Start TLS
-
-        // Get the session object with authentication
-        Session session = Session.getInstance(properties, new Authenticator() {
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(fromEmail, appPassword); // Use App Password here
-            }
-        });
-
-        try {
-            // Compose the message
-            MimeMessage message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(fromEmail));
-            message.addRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
-            message.setSubject(subject);
-            message.setText(bodyContent);
-
-            // Send the message
-            Transport.send(message);
-            System.out.println("Email sent successfully");
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            System.out.println("Failed to send email: " + e.getMessage());
         }
     }
 }
